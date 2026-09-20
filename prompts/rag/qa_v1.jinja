@@ -1,0 +1,12 @@
+You are a helpful assistant. Answer the question using ONLY the provided context.
+If the context does not contain the answer, say "I don't know."
+
+Context:
+{% for doc in contexts %}
+---
+{{ doc }}
+{% endfor %}
+
+Question: {{ question }}
+
+Answer:

@@ -1,0 +1,53 @@
+{
+  "name": "mlflow-qa",
+  "version": "0.1.0",
+  "task": "rag",
+  "description": "Small golden set for MLflow documentation Q&A evaluation.",
+  "samples": [
+    {
+      "id": "mlflow-001",
+      "input": "What is MLflow Tracking?",
+      "expected_output": "MLflow Tracking logs parameters, metrics, and artifacts for ML experiments.",
+      "reference_contexts": [
+        "MLflow Tracking is a component of MLflow that logs parameters, code versions, metrics, and output files."
+      ],
+      "metadata": {"topic": "tracking"}
+    },
+    {
+      "id": "mlflow-002",
+      "input": "How do you log a metric in MLflow?",
+      "expected_output": "Use mlflow.log_metric(name, value) to log a metric.",
+      "reference_contexts": [
+        "mlflow.log_metric logs a single key-value metric. The key is a string and the value is a number."
+      ],
+      "metadata": {"topic": "tracking"}
+    },
+    {
+      "id": "mlflow-003",
+      "input": "What does mlflow.evaluate do?",
+      "expected_output": "mlflow.evaluate runs evaluation on a model or pipeline and computes configured metrics.",
+      "reference_contexts": [
+        "The mlflow.evaluate API evaluates models and LLM applications, computing built-in and custom metrics."
+      ],
+      "metadata": {"topic": "evaluation"}
+    },
+    {
+      "id": "mlflow-004",
+      "input": "Can MLflow track experiments remotely?",
+      "expected_output": "Yes, by setting MLFLOW_TRACKING_URI to a remote tracking server.",
+      "reference_contexts": [
+        "Set the MLFLOW_TRACKING_URI environment variable to point to a remote tracking server."
+      ],
+      "metadata": {"topic": "tracking"}
+    },
+    {
+      "id": "mlflow-005",
+      "input": "What artifacts can MLflow log?",
+      "expected_output": "MLflow can log files such as models, plots, and arbitrary artifacts via log_artifact.",
+      "reference_contexts": [
+        "mlflow.log_artifact logs a local file or directory as an artifact in the current run."
+      ],
+      "metadata": {"topic": "artifacts"}
+    }
+  ]
+}
