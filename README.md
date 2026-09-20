@@ -37,6 +37,10 @@ pip install -e ".[dev]"
 # Validate the example experiment matrix
 eval-harness validate configs/matrices/rag_qa_baseline.yaml
 
+# Run one sample through the RAG pipeline (mock model, no API key)
+eval-harness run-sample configs/matrices/rag_qa_baseline.yaml \
+  --variant bm25-only --sample-id mlflow-001 --mock
+
 # Show implementation roadmap
 eval-harness info
 ```
@@ -72,7 +76,7 @@ Each phase lands as a focused PR with architecture diagrams and a clear scope.
 | Phase | Status | Scope |
 |-------|--------|-------|
 | 1 | ✅ | Foundation — models, config, CLI |
-| 2 | 🔜 | Pipeline abstractions |
+| 2 | ✅ | Pipeline — model, prompt, retriever, `run-sample` |
 | 3 | 🔜 | Experiment runner |
 | 4 | 🔜 | Scorers |
 | 5 | 🔜 | Results store + leaderboard |
