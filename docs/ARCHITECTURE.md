@@ -92,7 +92,7 @@ flowchart TB
 | Phase | PR | Delivers |
 |-------|-----|----------|
 | 1 | #1 | Domain models, config schema, CLI `validate`, docs |
-| 2 | #2 | `Pipeline`, `ModelProvider`, `PromptRenderer`, `Retriever` interfaces |
+| 2 | #2 | `RAGPipeline`, `ModelProvider`, `PromptRenderer`, `Retriever` + `run-sample` CLI |
 | 3 | #3 | `ExperimentRunner` — executes matrix, collects raw outputs |
 | 4 | #4 | Scorers: recall@k, MRR, exact match, LLM-as-judge |
 | 5 | #5 | JSON results store, CSV/HTML leaderboard |

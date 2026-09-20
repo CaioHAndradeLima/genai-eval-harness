@@ -9,7 +9,14 @@ from rich.console import Console
 from rich.table import Table
 
 from eval_harness import __version__
-from eval_harness.config import ConfigError, load_dataset, load_experiment_matrix, resolve_path
+from eval_harness.config import (
+    ConfigError,
+    find_project_root,
+    load_dataset,
+    load_experiment_matrix,
+    resolve_path,
+)
+from eval_harness.pipeline.factory import build_rag_pipeline
 
 app = typer.Typer(
     name="eval-harness",
@@ -71,6 +78,51 @@ def validate_cmd(
     )
 
 
+@app.command("run-sample")
+def run_sample_cmd(
+    matrix: Path = typer.Argument(..., help="Path to experiment matrix YAML"),
+    variant_name: str = typer.Option(..., "--variant", "-v", help="Variant name to run"),
+    sample_id: str = typer.Option(..., "--sample-id", "-s", help="Sample ID from the dataset"),
+    mock: bool = typer.Option(True, "--mock/--live", help="Use mock model (no API key)"),
+) -> None:
+    """Run a single eval sample through the pipeline (Phase 2 smoke test)."""
+    try:
+        experiment = load_experiment_matrix(matrix)
+        variant = experiment.get_variant(variant_name)
+        dataset_path = resolve_path(matrix.parent, variant.data.path)
+        dataset = load_dataset(dataset_path)
+    except (ConfigError, KeyError) as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    sample = next((s for s in dataset.samples if s.id == sample_id), None)
+    if sample is None:
+        console.print(f"[red]Error:[/red] sample '{sample_id}' not found in dataset")
+        raise typer.Exit(code=1)
+
+    pipeline = build_rag_pipeline(
+        variant, find_project_root(matrix.parent), use_mock_model=mock
+    )
+    result = pipeline.run(sample)
+
+    if result.error:
+        console.print(f"[red]Pipeline error:[/red] {result.error}")
+        raise typer.Exit(code=1)
+
+    console.print(f"[bold]Variant:[/bold] {variant_name}")
+    console.print(f"[bold]Sample:[/bold] {sample_id}")
+    console.print(f"[bold]Retriever:[/bold] {result.retriever_type}")
+    console.print(f"[bold]Retrieved ({len(result.retrieved_contexts)}):[/bold]")
+    for index, ctx in enumerate(result.retrieved_contexts, 1):
+        preview = ctx[:120] + ("..." if len(ctx) > 120 else "")
+        console.print(f"  [{index}] {preview}")
+    console.print(f"\n[bold]Output:[/bold]\n{result.output}")
+    console.print(
+        f"\n[dim]latency={result.latency_ms:.1f}ms tokens={result.token_count} "
+        f"model={result.model_name}[/dim]"
+    )
+
+
 @app.command("info")
 def info_cmd() -> None:
     """Show project capabilities and roadmap status."""
@@ -81,7 +133,7 @@ def info_cmd() -> None:
 
     phases = [
         ("1", "[green]done[/green]", "Foundation — models, config schema, CLI validate"),
-        ("2", "[yellow]planned[/yellow]", "Pipeline — model, prompt, retriever abstractions"),
+        ("2", "[green]done[/green]", "Pipeline — model, prompt, retriever, run-sample"),
         ("3", "[yellow]planned[/yellow]", "Runner — config matrix executor"),
         ("4", "[yellow]planned[/yellow]", "Scorers — retrieval + generation metrics"),
         ("5", "[yellow]planned[/yellow]", "Store — results logging + leaderboard"),
