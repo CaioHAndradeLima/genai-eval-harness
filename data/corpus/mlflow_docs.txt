@@ -1,0 +1,23 @@
+MLflow Tracking
+================
+
+MLflow Tracking is a component of MLflow that logs parameters, code versions, metrics, and output files when running machine learning code and lets you visualize the results.
+
+To log a metric, use mlflow.log_metric. mlflow.log_metric logs a single key-value metric. The key is a string and the value is a number.
+
+Set the MLFLOW_TRACKING_URI environment variable to point to a remote tracking server. This enables team-wide experiment tracking.
+
+Artifacts
+---------
+
+mlflow.log_artifact logs a local file or directory as an artifact in the current run. Common artifacts include trained models, plots, and configuration files.
+
+Evaluation
+----------
+
+The mlflow.evaluate API evaluates models and LLM applications, computing built-in and custom metrics. It supports faithfulness, relevance, latency, and custom LLM-judge metrics for GenAI pipelines.
+
+Regression Testing
+------------------
+
+MLflow supports regression tests with @mlflow.test decorators. These tests gate CI pipelines by asserting minimum metric thresholds on agent outputs.
