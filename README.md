@@ -41,6 +41,9 @@ eval-harness validate configs/matrices/rag_qa_baseline.yaml
 eval-harness run-sample configs/matrices/rag_qa_baseline.yaml \
   --variant bm25-only --sample-id mlflow-001 --mock
 
+# Run full experiment matrix (all variants × all samples)
+eval-harness run configs/matrices/rag_qa_baseline.yaml --mock
+
 # Show implementation roadmap
 eval-harness info
 ```
@@ -77,7 +80,7 @@ Each phase lands as a focused PR with architecture diagrams and a clear scope.
 |-------|--------|-------|
 | 1 | ✅ | Foundation — models, config, CLI |
 | 2 | ✅ | Pipeline — model, prompt, retriever, `run-sample` |
-| 3 | 🔜 | Experiment runner |
+| 3 | ✅ | Experiment runner + `run` CLI |
 | 4 | 🔜 | Scorers |
 | 5 | 🔜 | Results store + leaderboard |
 | 6 | 🔜 | Full RAG walkthrough |

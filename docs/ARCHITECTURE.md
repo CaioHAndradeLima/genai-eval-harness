@@ -93,7 +93,7 @@ flowchart TB
 |-------|-----|----------|
 | 1 | #1 | Domain models, config schema, CLI `validate`, docs |
 | 2 | #2 | `RAGPipeline`, `ModelProvider`, `PromptRenderer`, `Retriever` + `run-sample` CLI |
-| 3 | #3 | `ExperimentRunner` — executes matrix, collects raw outputs |
+| 3 | #3 | `ExperimentRunner`, `eval-harness run`, JSON results under `results/runs/` |
 | 4 | #4 | Scorers: recall@k, MRR, exact match, LLM-as-judge |
 | 5 | #5 | JSON results store, CSV/HTML leaderboard |
 | 6 | #6 | End-to-end RAG example with committed sample results |

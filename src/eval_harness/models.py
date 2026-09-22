@@ -189,3 +189,26 @@ class LeaderboardRow(BaseModel):
     metrics: dict[str, float]
     latency_p50_ms: float = 0.0
     cost_usd: float = 0.0
+
+
+class MatrixRunResult(BaseModel):
+    """Complete result of executing an experiment matrix."""
+
+    matrix_name: str
+    baseline: str
+    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    finished_at: datetime | None = None
+    git_commit: str | None = None
+    variant_results: list[VariantRunResult] = Field(default_factory=list)
+
+    @property
+    def variant_names(self) -> list[str]:
+        return [r.variant_name for r in self.variant_results]
+
+    @property
+    def total_samples(self) -> int:
+        return sum(len(r.sample_results) for r in self.variant_results)
+
+    @property
+    def total_errors(self) -> int:
+        return sum(r.error_count for r in self.variant_results)

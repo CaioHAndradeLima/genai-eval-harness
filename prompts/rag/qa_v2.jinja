@@ -4,8 +4,8 @@ You are a precise technical assistant. Follow these rules:
 3. If context is insufficient, respond with "I don't know."
 
 Retrieved context (ranked by relevance):
-{% for i, doc in enumerate(contexts, 1) %}
-[{{ i }}] {{ doc }}
+{% for doc in contexts %}
+[{{ loop.index }}] {{ doc }}
 {% endfor %}
 
 User question: {{ question }}
