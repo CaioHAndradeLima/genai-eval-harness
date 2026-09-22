@@ -17,6 +17,7 @@ from eval_harness.config import (
     resolve_path,
 )
 from eval_harness.pipeline.factory import build_rag_pipeline
+from eval_harness.runner import ExperimentRunner, save_run_result
 
 app = typer.Typer(
     name="eval-harness",
@@ -123,6 +124,87 @@ def run_sample_cmd(
     )
 
 
+@app.command("run")
+def run_cmd(
+    matrix: Path = typer.Argument(..., help="Path to experiment matrix YAML"),
+    variant_name: list[str] = typer.Option(
+        None,
+        "--variant",
+        "-v",
+        help="Run only these variants (repeatable). Default: all variants.",
+    ),
+    mock: bool = typer.Option(True, "--mock/--live", help="Use mock model (no API key)"),
+    output: Path = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Directory to save run results (default: results/runs/)",
+    ),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Disable progress bars"),
+) -> None:
+    """Run an experiment matrix — all variants × all dataset samples."""
+    try:
+        experiment = load_experiment_matrix(matrix)
+        if variant_name:
+            for name in variant_name:
+                experiment.get_variant(name)
+    except (ConfigError, KeyError) as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    root = find_project_root(matrix.parent)
+    runner = ExperimentRunner(
+        root,
+        use_mock_model=mock,
+        show_progress=not quiet,
+    )
+
+    console.print(
+        f"[bold]Running matrix:[/bold] {experiment.name} "
+        f"({len(variant_name) if variant_name else len(experiment.variants)} variant(s), "
+        f"{'mock' if mock else 'live'} model)"
+    )
+
+    result = runner.run_matrix(
+        experiment,
+        matrix,
+        variant_names=variant_name or None,
+    )
+
+    table = Table(title="Run Summary")
+    table.add_column("Variant")
+    table.add_column("Samples")
+    table.add_column("OK")
+    table.add_column("Errors")
+    table.add_column("Avg latency (ms)")
+
+    for variant_result in result.variant_results:
+        latencies = [r.latency_ms for r in variant_result.sample_results if r.error is None]
+        avg_latency = sum(latencies) / len(latencies) if latencies else 0.0
+        is_baseline = variant_result.variant_name == experiment.baseline
+        name = variant_result.variant_name
+        if is_baseline:
+            name = f"{name} [baseline]"
+        table.add_row(
+            name,
+            str(len(variant_result.sample_results)),
+            str(variant_result.success_count),
+            str(variant_result.error_count),
+            f"{avg_latency:.1f}",
+        )
+
+    console.print(table)
+
+    out_dir = output or (root / "results" / "runs")
+    run_dir = save_run_result(result, out_dir)
+    console.print(f"\n[green]✓[/green] Results saved to [bold]{run_dir}[/bold]")
+    if result.git_commit:
+        console.print(f"[dim]git commit: {result.git_commit[:8]}[/dim]")
+
+    if result.total_errors > 0:
+        raise typer.Exit(code=1)
+
+
 @app.command("info")
 def info_cmd() -> None:
     """Show project capabilities and roadmap status."""
@@ -134,7 +216,7 @@ def info_cmd() -> None:
     phases = [
         ("1", "[green]done[/green]", "Foundation — models, config schema, CLI validate"),
         ("2", "[green]done[/green]", "Pipeline — model, prompt, retriever, run-sample"),
-        ("3", "[yellow]planned[/yellow]", "Runner — config matrix executor"),
+        ("3", "[green]done[/green]", "Runner — matrix executor, run CLI, JSON output"),
         ("4", "[yellow]planned[/yellow]", "Scorers — retrieval + generation metrics"),
         ("5", "[yellow]planned[/yellow]", "Store — results logging + leaderboard"),
         ("6", "[yellow]planned[/yellow]", "Example — full RAG benchmark walkthrough"),
