@@ -16,8 +16,11 @@ from eval_harness.config import (
     load_experiment_matrix,
     resolve_path,
 )
+from eval_harness.leaderboard import build_leaderboard
 from eval_harness.pipeline.factory import build_rag_pipeline
+from eval_harness.regression import check_regression
 from eval_harness.runner import ExperimentRunner, save_run_result
+from eval_harness.scorers import score_matrix_run
 
 app = typer.Typer(
     name="eval-harness",
@@ -141,6 +144,12 @@ def run_cmd(
         help="Directory to save run results (default: results/runs/)",
     ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Disable progress bars"),
+    baseline: Path = typer.Option(
+        None,
+        "--baseline",
+        help="Regression baseline JSON; fail if metrics drop below thresholds",
+    ),
+    no_score: bool = typer.Option(False, "--no-score", help="Skip metric scoring"),
 ) -> None:
     """Run an experiment matrix — all variants × all dataset samples."""
     try:
@@ -171,35 +180,74 @@ def run_cmd(
         variant_names=variant_name or None,
     )
 
+    if not no_score:
+        result = score_matrix_run(experiment, matrix, result)
+
+    leaderboard = build_leaderboard(result) if not no_score else []
+
     table = Table(title="Run Summary")
     table.add_column("Variant")
     table.add_column("Samples")
     table.add_column("OK")
     table.add_column("Errors")
+    if not no_score:
+        table.add_column("recall@k")
+        table.add_column("faithfulness")
     table.add_column("Avg latency (ms)")
 
     for variant_result in result.variant_results:
         latencies = [r.latency_ms for r in variant_result.sample_results if r.error is None]
         avg_latency = sum(latencies) / len(latencies) if latencies else 0.0
-        is_baseline = variant_result.variant_name == experiment.baseline
+        is_baseline_row = variant_result.variant_name == experiment.baseline
         name = variant_result.variant_name
-        if is_baseline:
+        if is_baseline_row:
             name = f"{name} [baseline]"
-        table.add_row(
+        metrics = {m.name: m.value for m in variant_result.aggregate_metrics}
+        row = [
             name,
             str(len(variant_result.sample_results)),
             str(variant_result.success_count),
             str(variant_result.error_count),
-            f"{avg_latency:.1f}",
-        )
+        ]
+        if not no_score:
+            row.extend(
+                [
+                    f"{metrics.get('recall_at_k', 0.0):.3f}",
+                    f"{metrics.get('faithfulness', 0.0):.3f}",
+                ]
+            )
+        row.append(f"{avg_latency:.1f}")
+        table.add_row(*row)
 
     console.print(table)
 
+    if leaderboard:
+        lb_table = Table(title="Leaderboard")
+        lb_table.add_column("Rank")
+        lb_table.add_column("Variant")
+        lb_table.add_column("Key metrics")
+        for row in leaderboard:
+            keys = ", ".join(
+                f"{k}={row.metrics[k]:.3f}"
+                for k in ("recall_at_k", "mrr", "faithfulness", "exact_match")
+                if k in row.metrics
+            )
+            lb_table.add_row(str(row.rank), row.variant_name, keys or "—")
+        console.print(lb_table)
+
     out_dir = output or (root / "results" / "runs")
-    run_dir = save_run_result(result, out_dir)
+    run_dir = save_run_result(result, out_dir, leaderboard=leaderboard or None)
     console.print(f"\n[green]✓[/green] Results saved to [bold]{run_dir}[/bold]")
     if result.git_commit:
         console.print(f"[dim]git commit: {result.git_commit[:8]}[/dim]")
+
+    if baseline:
+        failures = check_regression(result, baseline)
+        if failures:
+            for msg in failures:
+                console.print(f"[red]Regression:[/red] {msg}")
+            raise typer.Exit(code=1)
+        console.print(f"[green]✓[/green] Regression check passed ({baseline})")
 
     if result.total_errors > 0:
         raise typer.Exit(code=1)
@@ -217,10 +265,10 @@ def info_cmd() -> None:
         ("1", "[green]done[/green]", "Foundation — models, config schema, CLI validate"),
         ("2", "[green]done[/green]", "Pipeline — model, prompt, retriever, run-sample"),
         ("3", "[green]done[/green]", "Runner — matrix executor, run CLI, JSON output"),
-        ("4", "[yellow]planned[/yellow]", "Scorers — retrieval + generation metrics"),
-        ("5", "[yellow]planned[/yellow]", "Store — results logging + leaderboard"),
-        ("6", "[yellow]planned[/yellow]", "Example — full RAG benchmark walkthrough"),
-        ("7", "[yellow]planned[/yellow]", "CI — regression tests + GitHub Actions"),
+        ("4", "[green]done[/green]", "Scorers — retrieval + generation + ops metrics"),
+        ("5", "[green]done[/green]", "Leaderboard — CSV/HTML in run directory"),
+        ("6", "[green]done[/green]", "Example baseline — examples/baseline_metrics.json"),
+        ("7", "[green]done[/green]", "CI — GitHub Actions + regression tests"),
     ]
     for phase, status, scope in phases:
         table.add_row(phase, status, scope)

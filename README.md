@@ -44,9 +44,15 @@ eval-harness run-sample configs/matrices/rag_qa_baseline.yaml \
 # Run full experiment matrix (all variants × all samples)
 eval-harness run configs/matrices/rag_qa_baseline.yaml --mock
 
+# CI-style regression check
+eval-harness run configs/matrices/rag_qa_baseline.yaml --mock \
+  --baseline examples/baseline_metrics.json
+
 # Show implementation roadmap
 eval-harness info
 ```
+
+[![CI](https://github.com/CaioHAndradeLima/genai-eval-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/CaioHAndradeLima/genai-eval-harness/actions/workflows/ci.yml)
 
 ## Project structure
 
@@ -81,10 +87,10 @@ Each phase lands as a focused PR with architecture diagrams and a clear scope.
 | 1 | ✅ | Foundation — models, config, CLI |
 | 2 | ✅ | Pipeline — model, prompt, retriever, `run-sample` |
 | 3 | ✅ | Experiment runner + `run` CLI |
-| 4 | 🔜 | Scorers |
-| 5 | 🔜 | Results store + leaderboard |
-| 6 | 🔜 | Full RAG walkthrough |
-| 7 | 🔜 | CI regression tests |
+| 4 | ✅ | Scorers (retrieval + generation + ops) |
+| 5 | ✅ | Leaderboard CSV/HTML per run |
+| 6 | ✅ | Baseline + examples |
+| 7 | ✅ | GitHub Actions + regression gate |
 
 ## Tech stack
 

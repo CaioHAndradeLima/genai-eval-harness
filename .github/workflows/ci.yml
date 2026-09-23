@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package
+        run: pip install -e ".[dev]"
+
+      - name: Unit tests
+        run: pytest -q
+
+      - name: Validate experiment matrix
+        run: eval-harness validate configs/matrices/rag_qa_baseline.yaml
+
+      - name: Run mock evaluation (full matrix)
+        run: |
+          eval-harness run configs/matrices/rag_qa_baseline.yaml --mock -q \
+            --baseline examples/baseline_metrics.json
+
+      - name: Upload eval artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-debug
+          path: results/runs/
+          if-no-files-found: ignore

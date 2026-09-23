@@ -94,10 +94,10 @@ flowchart TB
 | 1 | #1 | Domain models, config schema, CLI `validate`, docs |
 | 2 | #2 | `RAGPipeline`, `ModelProvider`, `PromptRenderer`, `Retriever` + `run-sample` CLI |
 | 3 | #3 | `ExperimentRunner`, `eval-harness run`, JSON results under `results/runs/` |
-| 4 | #4 | Scorers: recall@k, MRR, exact match, LLM-as-judge |
-| 5 | #5 | JSON results store, CSV/HTML leaderboard |
-| 6 | #6 | End-to-end RAG example with committed sample results |
-| 7 | #7 | pytest regression suite + GitHub Actions |
+| 4 | #4 | Scorers: recall@k, MRR, nDCG, faithfulness, exact match |
+| 5 | #5 | Leaderboard CSV/HTML in each run directory |
+| 6 | #6 | `examples/baseline_metrics.json` + sample docs |
+| 7 | #7 | `.github/workflows/ci.yml` + regression gate |
 
 ## Config matrix example
 

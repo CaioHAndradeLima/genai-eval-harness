@@ -1,0 +1,21 @@
+{
+  "matrix": "rag-qa-baseline",
+  "description": "CI regression floors for mock-model eval on configs/matrices/rag_qa_baseline.yaml. Each metric must stay within tolerance of these values.",
+  "tolerance": 0.05,
+  "variants": {
+    "bm25-only": {
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "faithfulness": 0.45,
+      "exact_match": 0.0
+    },
+    "hybrid-rerank": {
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg": 0.95,
+      "faithfulness": 0.45,
+      "answer_relevance": 0.3,
+      "exact_match": 0.0
+    }
+  }
+}
