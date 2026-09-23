@@ -15,10 +15,12 @@ from eval_harness.models import (
     EvalDataset,
     ExperimentMatrix,
     ExperimentVariant,
+    LeaderboardRow,
     MatrixRunResult,
     SampleResult,
     VariantRunResult,
 )
+from eval_harness.leaderboard import save_leaderboard
 from eval_harness.pipeline.factory import build_rag_pipeline
 from eval_harness.pipeline.types import PipelineOutput
 
@@ -151,7 +153,12 @@ class ExperimentRunner:
         )
 
 
-def save_run_result(result: MatrixRunResult, output_dir: Path) -> Path:
+def save_run_result(
+    result: MatrixRunResult,
+    output_dir: Path,
+    *,
+    leaderboard: list[LeaderboardRow] | None = None,
+) -> Path:
     """Persist matrix run results as JSON."""
     output_dir.mkdir(parents=True, exist_ok=True)
     timestamp = result.started_at.strftime("%Y%m%dT%H%M%SZ")
@@ -180,6 +187,10 @@ def save_run_result(result: MatrixRunResult, output_dir: Path) -> Path:
         "total_errors": result.total_errors,
         "run_dir": str(run_dir),
     }
+    if leaderboard:
+        save_leaderboard(leaderboard, run_dir, matrix_name=result.matrix_name)
+        manifest["leaderboard"] = True
+
     (run_dir / "manifest.json").write_text(
         json.dumps(manifest, indent=2),
         encoding="utf-8",
